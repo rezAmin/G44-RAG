@@ -1,8 +1,11 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from openai import OpenAI
 
 
 DEFAULT_MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
+DEFAULT_API_MODEL = "qwen/qwen-2.5-7b-instruct"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 SYSTEM_PROMPT = """تو یک دستیار هوشمند دانشگاهی هستی که فقط بر اساس آیین‌نامه‌ها و مقررات رسمی دانشگاه صنعتی شریف پاسخ می‌دهی.
 
@@ -86,3 +89,32 @@ class Generator:
 
         new_tokens = output_ids[0][inputs["input_ids"].shape[1]:]
         return self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+
+class APIGenerator:
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = DEFAULT_API_MODEL,
+        base_url: str = OPENROUTER_BASE_URL,
+    ):
+        self.model = model
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+
+    def generate(
+        self,
+        query: str,
+        context: str,
+        max_new_tokens: int = 512,
+        temperature: float = 0.3,
+        top_p: float = 0.9,
+    ) -> str:
+        messages = build_prompt(query, context)
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            max_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
+        return response.choices[0].message.content.strip()

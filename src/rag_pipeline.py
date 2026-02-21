@@ -1,16 +1,37 @@
+import os
+
+from dotenv import load_dotenv
+
 from src.retriever import Retriever, format_retrieved_context
-from src.generator import Generator
+from src.generator import Generator, APIGenerator
+
+load_dotenv()
+
+
+def create_generator() -> Generator | APIGenerator:
+    mode = os.getenv("GENERATOR_MODE", "local").strip().lower()
+
+    if mode == "api":
+        api_key = os.getenv("OPENROUTER_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "GENERATOR_MODE=api requires OPENROUTER_API_KEY to be set."
+            )
+        model = os.getenv("OPENROUTER_MODEL", "qwen/qwen-2.5-7b-instruct")
+        return APIGenerator(api_key=api_key, model=model)
+
+    return Generator()
 
 
 class RAGPipeline:
     def __init__(
         self,
         retriever: Retriever | None = None,
-        generator: Generator | None = None,
+        generator: Generator | APIGenerator | None = None,
         top_k: int = 5,
     ):
         self.retriever = retriever or Retriever()
-        self.generator = generator or Generator()
+        self.generator = generator or create_generator()
         self.top_k = top_k
 
     def answer(self, query: str) -> dict:
