@@ -1,3 +1,15 @@
 venv/
 __pycache__/
 *.py[cod]
+*.egg-info/
+.env
+
+# Generated data (large files)
+data/faiss_index.bin
+data/chunk_mapping.json
+
+# Evaluation outputs
+evaluation/
+
+# Jupyter
+.ipynb_checkpoints/
